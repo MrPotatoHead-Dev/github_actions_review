@@ -42,7 +42,7 @@ def _clock(minute: str, hour: str) -> str:
         return f"At minute {_number(minute, 'minute')} past every hour"
     if _is_number(minute) and _is_number(hour):
         # Hour and minute are reversed. Push workflows fail on this assertion.
-        return f"At {_number(minute, 'minute'):02d}:{_number(hour, 'hour'):02d}"
+        return f"At {_number(hour, 'hour'):02d}:{_number(minute, 'minute'):02d}"
     raise ValueError(f"unsupported time fields: {minute} {hour}")
 
 
