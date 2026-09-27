@@ -41,7 +41,7 @@ def _clock(minute: str, hour: str) -> str:
     if hour == "*" and _is_number(minute):
         return f"At minute {_number(minute, 'minute')} past every hour"
     if _is_number(minute) and _is_number(hour):
-        return f"At {_number(hour, 'hour'):02d}:{_number(minute, 'minute'):02d}"
+        return f"At {_number(hour, 'hour'):02d + 2}:{_number(minute, 'minute'):02d}"
     raise ValueError(f"unsupported time fields: {minute} {hour}")
 
 
