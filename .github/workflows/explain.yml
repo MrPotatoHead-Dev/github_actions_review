@@ -1,0 +1,77 @@
+# Reusable explanation. Callers pass the message and the pull request fields
+# because those values are not default GITHUB_* environment variables.
+# Leave a field blank to keep the value GitHub already set.
+
+name: Explain
+
+on:
+  workflow_call:
+    inputs:
+      commit_message:
+        description: Tip commit message, or the pull request title
+        required: false
+        type: string
+        default: ""
+      event_action:
+        description: pull_request action, such as opened or closed
+        required: false
+        type: string
+        default: ""
+      merged:
+        description: "'true' when a closed pull request was merged"
+        required: false
+        type: string
+        default: ""
+      head_sha:
+        description: Pull request head SHA. GITHUB_SHA is a different commit.
+        required: false
+        type: string
+        default: ""
+      event_name:
+        description: Preview event for the Manual workflow
+        required: false
+        type: string
+        default: ""
+      base_ref:
+        description: Preview base branch
+        required: false
+        type: string
+        default: ""
+      head_ref:
+        description: Preview head branch
+        required: false
+        type: string
+        default: ""
+      ref_name:
+        description: Preview ref name
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  explain:
+    name: Explain this run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v4
+
+      - name: Install uv and the project
+        uses: ./.github/actions/setup
+        with:
+          python-version: "3.12"
+
+      - name: Write the explanation into the log and the job summary
+        env:
+          ACTIONS_EXAMPLE_COMMIT_MESSAGE: ${{ inputs.commit_message }}
+          ACTIONS_EXAMPLE_EVENT_ACTION: ${{ inputs.event_action }}
+          ACTIONS_EXAMPLE_MERGED: ${{ inputs.merged }}
+          ACTIONS_EXAMPLE_HEAD_SHA: ${{ inputs.head_sha }}
+          ACTIONS_EXAMPLE_EVENT: ${{ inputs.event_name }}
+          ACTIONS_EXAMPLE_BASE_REF: ${{ inputs.base_ref }}
+          ACTIONS_EXAMPLE_HEAD_REF: ${{ inputs.head_ref }}
+          ACTIONS_EXAMPLE_REF_NAME: ${{ inputs.ref_name }}
+        run: uv run python -m test_actions

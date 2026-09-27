@@ -1,0 +1,30 @@
+[project]
+name = "test-actions"
+version = "0.1.0"
+description = "A worked example of GitHub Actions across pushes, pull requests, merges, and cron."
+readme = "README.md"
+authors = [
+    { name = "MrPotatoHead-Dev", email = "jadendux@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.3,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "unit: every push and every open pull request",
+    "integration: the workflow files match the rules in this package",
+    "merge_gate: pull requests into main; a failure is the check that blocks a merge",
+    "post_merge: pushes to main, including after a merge; a failure turns main red",
+    "scheduled: the weekday cron and the manual workflow",
+]

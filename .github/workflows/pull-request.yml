@@ -1,0 +1,78 @@
+# Starts when a pull request is opened, updated, reopened, or closed.
+# synchronize is the update that follows a new push to the head branch.
+# closed runs the explanation only. Tests on a closed pull request would
+# describe a commit that already landed, or a commit that was thrown away.
+#
+# The merge gate is a separate check so branch protection can require it
+# on main and ignore it for pull requests into other branches.
+
+name: Pull request
+
+run-name: pull_request ${{ github.event.action }} #${{ github.event.pull_request.number }} ${{ github.head_ref }} -> ${{ github.base_ref }}
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+
+concurrency:
+  group: pull-request-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  explain:
+    uses: ./.github/workflows/explain.yml
+    with:
+      commit_message: ${{ github.event.pull_request.title }}
+      event_action: ${{ github.event.action }}
+      merged: ${{ github.event.pull_request.merged && 'true' || 'false' }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
+
+  unit:
+    name: Unit tests
+    if: github.event.action != 'closed'
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: unit
+      artifact: pr-unit
+      title: Unit tests
+      python_versions: '["3.11", "3.12"]'
+
+  integration:
+    name: Integration tests
+    if: github.event.action != 'closed'
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: integration
+      artifact: pr-integration
+      title: Integration tests
+
+  merge-gate:
+    name: Merge gate
+    if: github.event.action != 'closed' && github.base_ref == 'main'
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: merge_gate
+      artifact: pr-merge-gate
+      title: Merge gate
+
+  where-to-look:
+    name: Where to look
+    needs: [unit, integration, merge-gate]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point at the failed job
+        run: |
+          echo "unit: ${{ needs.unit.result }}"
+          echo "integration: ${{ needs.integration.result }}"
+          echo "merge-gate: ${{ needs.merge-gate.result }}"
+          echo "Open the failed job for the pytest traceback."
+          echo "The run summary keeps the junit XML as an artifact for 14 days."

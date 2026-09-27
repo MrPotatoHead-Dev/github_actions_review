@@ -1,0 +1,9 @@
+# Merge gate blockers
+#
+# The Pull request workflow fails while this file has any active line.
+# A line is active when it is not blank and does not start with #.
+#
+# Uncomment the example, push the branch, and open a pull request into main.
+# The Merge gate job goes red. Push and post-merge jobs do not read this file.
+#
+# example: this pull request is blocked on purpose

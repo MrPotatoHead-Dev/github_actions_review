@@ -1,0 +1,49 @@
+# A merge is a push of the base branch. This file listens to that push
+# only when the branch is main, so the check can fail after the pull
+# request checks have already passed.
+# cancel-in-progress is false: an older main SHA keeps its red or green
+# result instead of disappearing when the next commit arrives.
+
+name: Merge to main
+
+run-name: push main ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: merge-main-${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  explain:
+    uses: ./.github/workflows/explain.yml
+    with:
+      commit_message: ${{ github.event.head_commit.message }}
+
+  post-merge:
+    name: Post-merge checks
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: post_merge
+      artifact: post-merge
+      title: Post-merge checks
+      commit_message: ${{ github.event.head_commit.message }}
+
+  where-to-look:
+    name: Where to look
+    needs: post-merge
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point at the failed job
+        run: |
+          echo "post-merge: ${{ needs.post-merge.result }}"
+          echo "Open Post-merge checks for the pytest traceback."
+          echo "The run summary keeps the junit XML as an artifact for 14 days."

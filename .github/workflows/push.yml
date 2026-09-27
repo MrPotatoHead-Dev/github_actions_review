@@ -1,0 +1,44 @@
+# Starts for every git push, on every branch, including main.
+# A push to a branch that already has an open pull request also starts
+# Pull request (.github/workflows/pull-request.yml). Those are two runs.
+# A new push to the same branch cancels the older Push run.
+
+name: Push
+
+run-name: push ${{ github.ref_name }} ${{ github.sha }}
+
+on:
+  push:
+    branches:
+      - "**"
+
+concurrency:
+  group: push-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  explain:
+    uses: ./.github/workflows/explain.yml
+    with:
+      commit_message: ${{ github.event.head_commit.message }}
+
+  unit:
+    name: Unit tests
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: unit
+      artifact: push-unit
+      title: Unit tests
+      python_versions: '["3.11", "3.12"]'
+
+  integration:
+    name: Integration tests
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: integration
+      artifact: push-integration
+      title: Integration tests

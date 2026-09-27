@@ -1,0 +1,96 @@
+# Reusable test job. The caller chooses the marker and the event preview.
+# Job-level `if` stays on the caller: a called workflow cannot decide that
+# a pull request was closed.
+
+name: Pytest
+
+on:
+  workflow_call:
+    inputs:
+      marker:
+        description: Pytest marker to run
+        required: true
+        type: string
+      artifact:
+        description: Artifact name prefix
+        required: true
+        type: string
+      title:
+        description: Step name in the log
+        required: true
+        type: string
+      python_versions:
+        description: JSON list of CPython versions
+        required: false
+        type: string
+        default: '["3.12"]'
+      simulate_failure:
+        description: "'1' fails the suite on purpose"
+        required: false
+        type: string
+        default: "0"
+      event_name:
+        description: Preview event. Blank keeps GITHUB_EVENT_NAME.
+        required: false
+        type: string
+        default: ""
+      event_action:
+        required: false
+        type: string
+        default: ""
+      base_ref:
+        required: false
+        type: string
+        default: ""
+      head_ref:
+        required: false
+        type: string
+        default: ""
+      ref_name:
+        required: false
+        type: string
+        default: ""
+      commit_message:
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  run:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(inputs.python_versions) }}
+    env:
+      SIMULATE_FAILURE: ${{ inputs.simulate_failure }}
+      ACTIONS_EXAMPLE_EVENT: ${{ inputs.event_name }}
+      ACTIONS_EXAMPLE_EVENT_ACTION: ${{ inputs.event_action }}
+      ACTIONS_EXAMPLE_BASE_REF: ${{ inputs.base_ref }}
+      ACTIONS_EXAMPLE_HEAD_REF: ${{ inputs.head_ref }}
+      ACTIONS_EXAMPLE_REF_NAME: ${{ inputs.ref_name }}
+      ACTIONS_EXAMPLE_COMMIT_MESSAGE: ${{ inputs.commit_message }}
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v4
+
+      - name: Install uv and the project
+        uses: ./.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ${{ inputs.title }}
+        run: uv run pytest -m "${{ inputs.marker }}" --junitxml=test-results.xml -v
+
+      - name: Upload the pytest report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}-py${{ matrix.python-version }}
+          path: test-results.xml
+          retention-days: 14

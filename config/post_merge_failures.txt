@@ -1,0 +1,7 @@
+# Post-merge failures
+#
+# The Merge to main workflow fails while this file has any active line.
+# The Pull request workflow does not read this file, so the pull request
+# stays green and main goes red after the merge.
+#
+# example: main should fail after this merges

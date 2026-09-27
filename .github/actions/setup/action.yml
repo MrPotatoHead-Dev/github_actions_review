@@ -1,0 +1,21 @@
+name: Setup
+description: Install uv, select the requested Python, and sync this project.
+
+inputs:
+  python-version:
+    description: CPython version uv should use
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+        python-version: ${{ inputs.python-version }}
+        cache-suffix: py${{ inputs.python-version }}
+
+    - name: Sync dependencies from the lockfile
+      shell: bash
+      run: uv sync --frozen --python ${{ inputs.python-version }}

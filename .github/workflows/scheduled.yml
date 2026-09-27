@@ -1,0 +1,42 @@
+# GitHub reads schedule from the default branch and starts it in UTC.
+# The shortest gap GitHub accepts is every 5 minutes. This one is weekdays
+# at 13:15 UTC, which is 10:15 in UTC-3. The run can begin late.
+# workflow_dispatch lets you start the same jobs from the Actions tab.
+# That button records event workflow_dispatch. The cron records event schedule.
+
+name: Scheduled
+
+run-name: ${{ github.event_name }} ${{ github.ref_name }}
+
+on:
+  schedule:
+    - cron: '15 13 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: scheduled-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  explain:
+    uses: ./.github/workflows/explain.yml
+
+  unit:
+    name: Unit tests
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: unit
+      artifact: scheduled-unit
+      title: Unit tests
+
+  scheduled:
+    name: Scheduled checks
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: scheduled
+      artifact: scheduled-checks
+      title: Scheduled checks

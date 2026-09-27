@@ -1,0 +1,69 @@
+# Run workflow button. Pick a suite and, when you want a red log, turn on
+# simulate failure or preview the reserved branch / commit message.
+# demo/fail-merge fails the merge gate.
+# [fail-post-merge] in the commit message fails the post-merge check.
+
+name: Manual
+
+run-name: manual ${{ inputs.suite }}${{ inputs.simulate_failure && ' simulated failure' || '' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Pytest marker to run
+        required: true
+        type: choice
+        default: unit
+        options:
+          - unit
+          - integration
+          - merge_gate
+          - post_merge
+          - scheduled
+      simulate_failure:
+        description: Fail this run on purpose so you can read a red log
+        required: true
+        type: boolean
+        default: false
+      pretend_branch:
+        description: Head branch to preview. demo/fail-merge fails the merge gate.
+        required: false
+        type: string
+        default: ""
+      commit_message:
+        description: Tip commit message to preview. Include [fail-post-merge] to fail post-merge checks.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  explain:
+    uses: ./.github/workflows/explain.yml
+    with:
+      commit_message: ${{ inputs.commit_message }}
+      event_name: ${{ inputs.suite == 'merge_gate' && 'pull_request' || inputs.suite == 'post_merge' && 'push' || '' }}
+      event_action: ${{ inputs.suite == 'merge_gate' && 'opened' || '' }}
+      base_ref: ${{ inputs.suite == 'merge_gate' && 'main' || '' }}
+      ref_name: ${{ inputs.suite == 'post_merge' && 'main' || '' }}
+      head_ref: ${{ inputs.pretend_branch }}
+      head_sha: ${{ github.sha }}
+
+  selected-suite:
+    name: Selected suite
+    uses: ./.github/workflows/pytest.yml
+    with:
+      marker: ${{ inputs.suite }}
+      artifact: manual-${{ inputs.suite }}
+      title: Manual ${{ inputs.suite }}
+      simulate_failure: ${{ inputs.simulate_failure && '1' || '0' }}
+      event_name: ${{ inputs.suite == 'merge_gate' && 'pull_request' || inputs.suite == 'post_merge' && 'push' || '' }}
+      event_action: ${{ inputs.suite == 'merge_gate' && 'opened' || '' }}
+      base_ref: ${{ inputs.suite == 'merge_gate' && 'main' || '' }}
+      ref_name: ${{ inputs.suite == 'post_merge' && 'main' || '' }}
+      head_ref: ${{ inputs.pretend_branch }}
+      commit_message: ${{ inputs.commit_message }}
