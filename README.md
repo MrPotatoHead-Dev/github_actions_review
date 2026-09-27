@@ -17,7 +17,7 @@ The **check** you see on a commit or a pull request is a job. A red job is a fai
 | Workflow | `.github/workflows/push.yml` and the files next to it |
 | Event | `push`, `pull_request`, `schedule`, `workflow_dispatch` |
 | Job | `Unit tests`, `Merge gate`, `Explain this run` |
-| Action | `actions/checkout@v4`, `actions/upload-artifact@v4` |
+| Action | `actions/checkout@v7`, `actions/upload-artifact@v7` |
 | Composite action | `.github/actions/setup` installs uv and syncs the lockfile |
 | Reusable workflow | `explain.yml` and `pytest.yml`, called with `uses:` |
 | Concurrency group | a new push cancels the in-progress Push run for that branch |
